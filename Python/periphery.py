@@ -80,7 +80,8 @@ if __name__ == '__main__':
             distance = distance + 1 
             print ("Gemessene Entfernung = %.1f cm" % distance)
             print ("Call PUT")
-            Apicall("PUT", "Distance", distance)          
+            Apicall("PUT", "Distance", distance)
+            Apicall("GET", "Distance")          
             time.sleep(10)
  
     # Exit after STRG+C input

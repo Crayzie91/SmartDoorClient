@@ -44,11 +44,22 @@ public class ClientThingClient extends ConnectedThingClient {
 		//Build ValueCollection of parameters
 		ValueCollection payload = new ValueCollection();
 		payload.put("name", new StringPrimitive(ThingName));
+		
+		try {
+			//Sometimes there is a prior client thing that wasn't deletes properly. 
+			//Try to call DeleteThing Service from the ServerThing.
+			client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "DeleteThing", payload, 10000);
+			LOG.info("ClientThing still existed and was deleted.");
+		} catch (Exception e) {
+			LOG.info("ClientThing was already deleted.");
+		}
+	
+		//Call CreateNewThing Service from the ServerThing
 		payload.put("description", new StringPrimitive("Remote created ClientThing"));
 		payload.put("thingTemplateName", new StringPrimitive("ClientThingTemplate"));
 		payload.put("projectName", new StringPrimitive("SmartDoor"));
-		//Call CreateNewThing Service from the ServerThing
 		client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "CreateNewThing", payload, 10000);
+		
 		//Enable and restart thing to set it active
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "EnableThing", payload, 10000);
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "RestartThing", payload, 10000);
@@ -126,8 +137,7 @@ public class ClientThingClient extends ConnectedThingClient {
 			
 		} catch (Exception e) {
 			LOG.error("An exception occured during execution.", e);
-		}
-		
+		}	
 		LOG.info("SimpleThingClient is done. Exiting");
 	}
 }
