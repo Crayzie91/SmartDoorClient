@@ -12,17 +12,21 @@ import com.thingworx.communications.client.ClientConfigurator;
 import com.thingworx.communications.client.ConnectedThingClient;
 import com.thingworx.communications.client.ConnectionException;
 import com.thingworx.communications.client.things.VirtualThing;
+import com.thingworx.metadata.annotations.ThingworxServiceDefinition;
+import com.thingworx.metadata.annotations.ThingworxServiceResult;
 import com.thingworx.relationships.RelationshipTypes.ThingworxEntityTypes;
 import com.thingworx.types.InfoTable;
 import com.thingworx.types.collections.ValueCollection;
+import com.thingworx.types.primitives.IntegerPrimitive;
+import com.thingworx.types.primitives.NumberPrimitive;
 import com.thingworx.types.primitives.StringPrimitive;
-
 
 public class ClientThingClient extends ConnectedThingClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ClientThingClient.class);
 	
 	private static String ThingName = "ClientThing";
+	private static int ID;
 	private static String RepositoryName = "SmartDoorRepository";
 
 	public ClientThingClient(ClientConfigurator config) throws Exception {
@@ -38,31 +42,27 @@ public class ClientThingClient extends ConnectedThingClient {
 	 * @throws Exception
 	 */
 	public static void CreateNewClientThing(ConnectedThingClient client) throws TimeoutException, ConnectionException, Exception {
-		//Get number of connected clients from ServerThing
-		double conn = (double)client.readProperty(ThingworxEntityTypes.Things, "ServerThing", "ClientsConnected", 10000).getLastRow().getValue("ClientsConnected");
-		ThingName=ThingName+"_"+(int)conn+1;
+		//Get ID for new Client
+		ID = (int)client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "addClient", new ValueCollection(), 10000).getLastRow().getValue("result");
+		ID++;
+		ThingName=ThingName+"_"+ID;
+		
 		//Build ValueCollection of parameters
 		ValueCollection payload = new ValueCollection();
 		payload.put("name", new StringPrimitive(ThingName));
-		
-		try {
-			//Sometimes there is a prior client thing that wasn't deletes properly. 
-			//Try to call DeleteThing Service from the ServerThing.
-			client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "DeleteThing", payload, 10000);
-			LOG.info("ClientThing still existed and was deleted.");
-		} catch (Exception e) {
-			LOG.info("ClientThing was already deleted.");
-		}
-	
-		//Call CreateNewThing Service from the ServerThing
 		payload.put("description", new StringPrimitive("Remote created ClientThing"));
 		payload.put("thingTemplateName", new StringPrimitive("ClientThingTemplate"));
-		payload.put("projectName", new StringPrimitive("SmartDoor"));
-		client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "CreateNewThing", payload, 10000);
+		payload.put("ID", new IntegerPrimitive(ID));
+		
+		//Call CreateThing Service from the platforms EntityServices
+		client.invokeService(ThingworxEntityTypes.Resources, "EntityServices", "CreateThing", payload, 10000);
+		LOG.info("{} was created.", ThingName);
 		
 		//Enable and restart thing to set it active
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "EnableThing", payload, 10000);
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "RestartThing", payload, 10000);
+		//Set ClientThing ID to identify the client
+		client.writeProperty(ThingworxEntityTypes.Things, ThingName, "ID", new IntegerPrimitive(ID), 10000);
 	}
 	
 	/**

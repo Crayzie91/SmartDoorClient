@@ -9,70 +9,42 @@ import org.slf4j.LoggerFactory;
 import com.thingworx.communications.client.ConnectedThingClient;
 import com.thingworx.communications.client.things.VirtualThing;
 import com.thingworx.metadata.PropertyDefinition;
+import com.thingworx.metadata.annotations.ThingworxEventDefinition;
+import com.thingworx.metadata.annotations.ThingworxEventDefinitions;
 import com.thingworx.metadata.annotations.ThingworxPropertyDefinition;
 import com.thingworx.metadata.annotations.ThingworxPropertyDefinitions;
+import com.thingworx.metadata.annotations.ThingworxServiceDefinition;
+import com.thingworx.metadata.annotations.ThingworxServiceResult;
 import com.thingworx.types.primitives.IPrimitiveType;
+import java.io.File;
 
-/**
-Aspects:	
-  	dataChangeType:
-  	Specifies when a DataChange Event may be triggered for a Property value change. The options are as follows:
-	Always:  Fire the event to subscribers for any property value change
-	Never:  Do not fire a change event
-	On:  For most values, any change will trigger this.  For more complex data types, such as InfoTables, refer to the specific product documentation.
-	Off:  Fire the event if the new value evaluates to a Boolean false
-	Value:  For Numbers, if the new value has changed by more than the threshold value, fire the change event.  For non-Numbers, this setting behaves the same as Always except in the case of logging to value streams. 
-			Non-Number properties will only log to value streams using the Value data change type if the value actually changes from the previous value.
-	
-	dataChangeThreshold:
-	Specifies if the property value should be persisted through a Thing or system restart. Properties that are not persistent will reset their values to their default after a Thing or system restart.
-	
-	cacheTime:
-	
-	isPersistent:
-	Specifies if the property value should be persisted through a Thing or system restart. Properties that are not persistent will reset their values to their default after a Thing or system restart.
-	
-	isReadOnly:
-	Specifies if the property value is read-only. If true, the property value can not be changed.
-	
-	pushType:
-	Edge Thing Properties have the ability to push their value changes to the server. This ability is configurable via the server property binding. The configuration choices are as follows:
-	Value:  Pushed based on Value Change - you can also configure a value change threshold
-	Never:  Never pushed
-	Always:  Always pushed every change
-	
-	defaultValue:
-	If the property is configured to have a default value, this value will be present at Thing initialization unless otherwise overwritten by a Persistent value set before system shutdown.		                    		 	
-
-	 */
-@SuppressWarnings("serial")
-@ThingworxPropertyDefinitions(properties = {
-	// This property is setup for collecting time series data. Each value
-	// that is collected will be pushed to the platfrom from within the
-	// processScanRequest() method.
-	@ThingworxPropertyDefinition(name="ClientsConnected",       
-			                     description="Number of connected CLients",
-			                     baseType="NUMBER",
-			                     aspects={"dataChangeType:VALUE",
-			                    		  "dataChangeThreshold:0",
-			                    		  "cacheTime:0", 
-			                    		  "isPersistent:FALSE", 
-			                    		  "isReadOnly:FALSE", 
-			                    		  "pushType:ALWAYS", 
-			                              "defaultValue:0"}),
+//Event Definitions
+@ThingworxEventDefinitions(events = {
+	@ThingworxEventDefinition(name="ClientEntered", description="The event being entered.", dataShape="SmartDoorClientDataShape", isInvocable=true, isPropertyEvent=false)
 })
 
+////A ValueCollection is used to specify a event's payload
+//ValueCollection payload = new ValueCollection();
+//
+//payload.put("name", new StringPrimitive("FileName"));
+//payload.put("path", new StringPrimitive("/file.txt"));
+//payload.put("fileType", new StringPrimitive("F"));
+//payload.put("lastModifiedDate", new DatetimePrimitive());
+//payload.put("size", new NumberPrimitive(256));
+//
+//// This will trigger the 'FileEvent' of a RemoteThing on the Platform.
+//client.fireEvent(ThingworxEntityTypes.Things, ThingName, "FileEvent", payload, 5000);
 
 /**
  * Implementation of the Remote ClientThing.
  * This Class implements and handles the Properties, Services, Events and Subscriptions of the ClientThing.
  * It also implements processScanRequest to handle periodic actions.
  */
+@SuppressWarnings("serial")
 public class ClientThing extends VirtualThing {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ClientThing.class);
 	private final String ClientName;
-
 
 	/**
 	 * A custom constructor. The Constructor is needed to call initializeFromAnnotations,
@@ -121,7 +93,7 @@ public class ClientThing extends VirtualThing {
 	}
 	
 	/**
-	 * This function handles the property writes from the server
+	 * This Method handles the property writes from the server
  	 * 
  	 * @see VirtualThing#processPropertyWrite(PropertyDefinition, IPrimitiveType)
  	 */
@@ -142,7 +114,7 @@ public class ClientThing extends VirtualThing {
 	 */
 	public Object getClientProperty(String PropertyName) {
 		Object var = getProperty(PropertyName).getValue().getValue();	
-		LOG.info("{} was set. New Value: {}", this.ClientName, var);
+		LOG.info("{} was read. Value: {}", PropertyName, var);
 		return var;
 	}
 	
@@ -159,4 +131,26 @@ public class ClientThing extends VirtualThing {
 		LOG.info("{} was set. New Value: {}", this.ClientName, value);
 	}
 	
+	/** 
+	 * This Method unlocks the client remotely.
+	 * 
+	 * The following annotation makes a method available to the ThingWorx Server for remote invocation.  
+         * 
+         * @return
+         * @throws Exception 
+         * @see https://developer.thingworx.com/resources/guides/thingworx-java-sdk-quickstart/creating-data-model
+         */
+	@ThingworxServiceDefinition(name="remoteOpen", description="Function to remotely open the door.")
+	@ThingworxServiceResult(name="result", description="TRUE if excecution was successfull.", baseType="BOOLEAN")
+	public boolean remoteOpen() throws Exception {	
+		//Excecute Python script to set a GPIO HIGH as a trigger
+                Runtime rt = Runtime.getRuntime();
+                String cmd = "python ./../../trigger.py "+ClientName;
+                Process pr = rt.exec(cmd);
+                
+		LOG.info("{} was unlocked.", this.ClientName);
+		return true;
+	}
 }
+
+
