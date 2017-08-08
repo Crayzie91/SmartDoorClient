@@ -18,7 +18,7 @@ GPIO.setup(GPIO_BUTTON2, GPIO.IN)
 
 name=""
 count=0
-nameList=["Alice","Bob","Chris","Daniel","Eddie","Unknown"]
+nameList=["Alice A","Bob B","Chris C","Daniel D","Eddie E","Unknown"]
 exit=False
 
 def button1_callback(GPIO_BUTTON1):
@@ -44,10 +44,10 @@ def Apicall(name):
     session.headers.update({"appKey":"ce22e9e4-2834-419c-9656-ef9f844c784c"})
     session.headers.update({"Content-Type":"application/json"})
     session.headers.update({"Accept":"application/json"})
-    requestbody = "{\"LastEntered\":\""+name+"\"}"
+    requestbody = "{\"NewEntryRequest\":\""+name+"\"}"
 
     baseurl = "http://34.227.165.169/Thingworx/"
-    entityurl = baseurl + "Things/"+sys.argv[1]+"/Properties/LastEntered"
+    entityurl = baseurl + "Things/"+sys.argv[1]+"/Properties/NewEntryRequest"
 
     response = session.put(entityurl, data=requestbody)
     print ("PUT URL: " + entityurl)

@@ -9,7 +9,12 @@ import json
 
 from neopixel import *
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+import lcddriver
+from _ast import Str
+
+logging.basicConfig(stream=sys.stderr, level=logging.INFO) # Setup of log
+
+lcd = lcddriver.lcd() # Initialization of lcd display
 
 # Distance sensor configuration
 # Disable warnings if setup was already done in an earlier instance
@@ -33,22 +38,42 @@ LED_INVERT     = False   # True to invert the signal (when using NPN transistor 
 LED_CHANNEL    = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 LED_STRIP      = ws.WS2811_STRIP_GRB   # Strip type and color ordering
 
-# Set GPIO and callback to remotely open the door
+# Set GPIO and callback to remotely handle the door
 GPIO_DOOR = 25
 GPIO_REMOTE_TRIGGER = 18
+GPIO_REMOTE_TRIGGER_SELECT1 = 19
+GPIO_REMOTE_TRIGGER_SELECT2 = 20
 GPIO.setup(GPIO_REMOTE_TRIGGER, GPIO.IN)
+GPIO.setup(GPIO_REMOTE_TRIGGER_SELECT1, GPIO.IN)
+GPIO.setup(GPIO_REMOTE_TRIGGER_SELECT2, GPIO.IN)
 GPIO.setup(GPIO_DOOR, GPIO.IN)
 
+DoorState="Closed" # Initial state of door
+
+# Triggered if the state of the door is changed remotely
 def remote_callback(GPIO_REMOTE_TRIGGER):
-    openDoor(True)
+    print(GPIO.input(GPIO_REMOTE_TRIGGER_SELECT1))
+    print(GPIO.input(GPIO_REMOTE_TRIGGER_SELECT2))
+    if(GPIO.input(GPIO_REMOTE_TRIGGER_SELECT1) and GPIO.input(GPIO_REMOTE_TRIGGER_SELECT2)):
+        logging.info("Door opened")
+        DoorStatus("Open")
+    elif(not GPIO.input(GPIO_REMOTE_TRIGGER_SELECT1) and not GPIO.input(GPIO_REMOTE_TRIGGER_SELECT2)):
+        logging.info("Door closed")
+        DoorStatus("Closed")
+    else:
+        logging.info("Door Pending")
+        DoorStatus("Pending")
+    
     logging.info ("Entered Interrupt")
  
 GPIO.add_event_detect(GPIO_REMOTE_TRIGGER, GPIO.RISING, remote_callback)
 
+# Triggered if door is opened or closed
+# If state of door is "Open" the door will be locked again after it was opened
 def door_callback(GPIO_DOOR):
     if(GPIO.input(GPIO_DOOR)):
-        openDoor(False)
-        Apicall("PUT", "isOpen", False)
+        DoorStatus("Closed")
+        Apicall("PUT", "DoorStatus", "Closed")
         logging.info("Door was opened")
     else:        
         logging.info ("Door was closed")
@@ -64,6 +89,7 @@ session.headers.update({"appKey":"ce22e9e4-2834-419c-9656-ef9f844c784c"})
 session.headers.update({"Content-Type":"application/json"})
 session.headers.update({"Accept":"application/json"})
 
+# This function retrievs the measured distance of the distance sensor
 def getdistance():
     # Set Trigger HIGH
     GPIO.output(GPIO_TRIGGER, True)
@@ -91,22 +117,33 @@ def getdistance():
  
     return distanz
 
+# This function sets the color of the neopixel
 def setLedColor(LEDcolor):
     led.setPixelColor(0, LEDcolor)
     led.show()
 
-def openDoor(state):
-    if(state):
+# This function is called by every function that changed the door state
+# The global state and the led color are changed
+def DoorStatus(newState):
+    global DoorState
+    DoorState=newState
+    if(newState=="Open"):
         setLedColor(Color(255, 0, 0)) #Green
-    else:
+    elif (newState=="Closed"):
         setLedColor(Color(0, 255, 0)) #Red
+    else:
+        setLedColor(Color(0, 0, 255)) #Blue
 
+# This function calles the REST api of the Thingworx platform
 def Apicall(httprequest, object, value=0):
 
     entityurl = baseurl + "Things/"+client+"/Properties/" + object    
 
     if httprequest == 'PUT':
-        requestbody = "{\"" + object + "\":\"" + str(float("{0:.2f}".format(value))) + "\"}"
+        if(type(value) is str):
+            requestbody = "{\"" + object + "\":\"" + value + "\"}"
+        else:
+            requestbody = "{\"" + object + "\":\"" + str(float("{0:.2f}".format(value))) + "\"}"
         response = session.put(entityurl, data=requestbody)
         logging.debug ("PUT URL: " + entityurl)
         logging.debug ("PUT Body: " + requestbody)
@@ -127,25 +164,37 @@ if __name__ == '__main__':
  
     global client
     client = str(sys.argv[1])
- 
+    
+    lcd.lcd_clear()
+    
+    if(GPIO.input(GPIO_DOOR)):
+        lcd.lcd_display_string("Door is not closed!",2)
     # Signal at systemstart if the door is open with blue blinking led
     while(GPIO.input(GPIO_DOOR)):
         setLedColor(Color(0, 0, 255)) #Blue
         time.sleep(1)
         setLedColor(Color(0, 0, 0)) #Off
         time.sleep(1)
- 
-    openDoor(False)
+        
+    DoorStatus("Closed")
 
     try:
         distance = 0
-        while True:
+        while True:     
             distance = getdistance()
-            logging.info ("Gemessene Entfernung = %.1f cm" % distance)
+            logging.info ("Measured Distance = %.1f cm" % distance)
+            
             Apicall("PUT", "Distance", distance)  
-            time.sleep(5)  
+            if(distance<15 or DoorState!="Closed"):
+                lcd.lcd_clear()
+                lcd.lcd_display_string("%.1f cm" % distance,1)
+                lcd.lcd_display_string("Door: "+DoorState,2)
+            elif(DoorState=="Closed"):
+                lcd.lcd_backlight("Off")
+            
+            time.sleep(1)  
 
     # Exit after STRG+C input
     except KeyboardInterrupt:
-        logging.info("Messung vom User gestoppt")
+        logging.info("Measurement stopped by User")
         GPIO.cleanup()

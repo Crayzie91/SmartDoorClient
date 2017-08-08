@@ -2,7 +2,9 @@ package smartdoor;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
@@ -12,7 +14,6 @@ import com.thingworx.communications.client.ClientConfigurator;
 import com.thingworx.communications.client.ConnectedThingClient;
 import com.thingworx.communications.client.ConnectionException;
 import com.thingworx.communications.client.things.VirtualThing;
-import com.thingworx.metadata.annotations.ThingworxServiceDefinition;
 import com.thingworx.metadata.annotations.ThingworxServiceResult;
 import com.thingworx.relationships.RelationshipTypes.ThingworxEntityTypes;
 import com.thingworx.types.InfoTable;
@@ -63,6 +64,8 @@ public class ClientThingClient extends ConnectedThingClient {
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "RestartThing", payload, 10000);
 		//Set ClientThing ID to identify the client
 		client.writeProperty(ThingworxEntityTypes.Things, ThingName, "ID", new IntegerPrimitive(ID), 10000);
+		
+		
 	}
 	
 	/**
@@ -71,8 +74,7 @@ public class ClientThingClient extends ConnectedThingClient {
 	 * @param args CLI arguments
 	 * @see https://developer.thingworx.com/resources/guides/thingworx-java-sdk-tutorial/understanding-example-client-connection
 	 */
-	public static void main(String[] args) {
-	
+	public static void main(String[] args) {	
 		ClientConfigurator config = new ClientConfigurator();
 		String uri="http://34.227.165.169:80/Thingworx/WS";
 		String AppKey="ce22e9e4-2834-419c-9656-ef9f844c784c";
@@ -88,7 +90,8 @@ public class ClientThingClient extends ConnectedThingClient {
 		// This should be removed for production systems.
 		config.ignoreSSLErrors(true); // All self signed certs
 	
-		try {						
+		try {		
+						
 			// Create the Edge Client for the ClientThing.
 			ClientThingClient client = new ClientThingClient(config);
 			
@@ -117,6 +120,8 @@ public class ClientThingClient extends ConnectedThingClient {
 				// Bind the VirtualThing to the client. This will tell the Platform that
 				// the RemoteThing is now connected and that it is ready to receive requests.
 				client.bindThing(thing);
+				
+				thing.callCMD("python ./../../periphery.py "+ThingName);
 
 				while (!client.isShutdown()) {
 					
