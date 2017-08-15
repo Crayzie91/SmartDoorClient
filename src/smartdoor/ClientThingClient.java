@@ -28,7 +28,6 @@ public class ClientThingClient extends ConnectedThingClient {
 	
 	private static String ThingName = "ClientThing";
 	private static int ID;
-	private static String RepositoryName = "SmartDoorRepository";
 
 	public ClientThingClient(ClientConfigurator config) throws Exception {
 		super(config);
@@ -43,30 +42,34 @@ public class ClientThingClient extends ConnectedThingClient {
 	 * @throws Exception
 	 */
 	public static void CreateNewClientThing(ConnectedThingClient client) throws TimeoutException, ConnectionException, Exception {
-		//Get ID for new Client
-		ID = (int)client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "addClient", new ValueCollection(), 10000).getLastRow().getValue("result");
-		ID++;
-		ThingName=ThingName+"_"+ID;
-		
-		//Build ValueCollection of parameters
+		//Build ValueCollection for parameters
 		ValueCollection payload = new ValueCollection();
-		payload.put("name", new StringPrimitive(ThingName));
+
+                ID = (int)client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "getOpenClientID", payload, 10000).getLastRow().getValue("result");
+		    
+                //Get ID for new Client		
+		ThingName=ThingName+"_"+ID;
+                String loc = "Location_"+ID;
+                payload.put("name", new StringPrimitive(ThingName));
+                payload.put("Location", new StringPrimitive(loc));
+                payload.put("ID", new IntegerPrimitive(ID));
+                
+                client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "addClient", payload, 10000);
+				
 		payload.put("description", new StringPrimitive("Remote created ClientThing"));
 		payload.put("thingTemplateName", new StringPrimitive("ClientThingTemplate"));
-		payload.put("ID", new IntegerPrimitive(ID));
-		
-		//Call CreateThing Service from the platforms EntityServices
-		client.invokeService(ThingworxEntityTypes.Resources, "EntityServices", "CreateThing", payload, 10000);
+         
+		client.invokeService(ThingworxEntityTypes.Things, "ServerThing", "createClient", payload, 10000);
 		LOG.info("{} was created.", ThingName);
 		
-		//Enable and restart thing to set it active
+		//Enable and restart thing to set it active.
 		client.invokeService(ThingworxEntityTypes.Things, ThingName, "EnableThing", payload, 10000);
-		client.invokeService(ThingworxEntityTypes.Things, ThingName, "RestartThing", payload, 10000);
-		//Set ClientThing ID to identify the client
-		client.writeProperty(ThingworxEntityTypes.Things, ThingName, "ID", new IntegerPrimitive(ID), 10000);
-		
-		
-	}
+                client.invokeService(ThingworxEntityTypes.Things, ThingName, "RestartThing", payload, 10000);
+
+		//Set ClientThing ID and location to identify the client
+		client.writeProperty(ThingworxEntityTypes.Things, ThingName, "ID", new IntegerPrimitive(ID), 10000);	
+        client.writeProperty(ThingworxEntityTypes.Things, ThingName, "Location", new StringPrimitive(loc), 10000);	
+        }
 	
 	/**
 	 * Main Routine of the client thing.
@@ -107,21 +110,12 @@ public class ClientThingClient extends ConnectedThingClient {
 								
 				// Create a new VirtualThing to connect to a thing on the Thingworx platform
 				ClientThing thing = new ClientThing(ThingName, "A basic client thing", client);
-				
-				/* Create the FileTransferThing to handle data in the repository
-				FileTransferThing transfer = new FileTransferThing(RepositoryName, client);
-				String timeStamp = new SimpleDateFormat("ddMM_HHmm").format(Calendar.getInstance().getTime());			
-				transfer.createFolder("/"+ThingName);
-				transfer.uploadImage("/"+ThingName+"/"+timeStamp+".jpg", "./Images/Test.jpg");
-				File image = transfer.downloadImage("/"+ThingName+"/"+timeStamp+".jpg", "./Images/Downloads/"+timeStamp+".jpg");
-				transfer.getLinktoFile("/"+ThingName, "/"+ThingName+"/"+timeStamp+".jpg");
-				transfer.deleteFolder("/");*/
 						
 				// Bind the VirtualThing to the client. This will tell the Platform that
 				// the RemoteThing is now connected and that it is ready to receive requests.
 				client.bindThing(thing);
 				
-				thing.callCMD("python ./../../periphery.py "+ThingName);
+				thing.callCMD("python ./../../periphery.py "+thing.getBindingName());
 
 				while (!client.isShutdown()) {
 					
