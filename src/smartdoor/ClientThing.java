@@ -128,7 +128,7 @@ public class ClientThing extends VirtualThing {
 	@ThingworxServiceResult(name="result", description="Path to Image in the repository.", baseType="STRING")
 	public String UnknownEntry() throws Exception {            
             String timeStamp = new SimpleDateFormat("ddMM_HHmm").format(Calendar.getInstance().getTime());
-            String cmd = "sudo raspistill -o ./Images/"+timeStamp+".jpg";
+            String cmd = "sudo raspistill -vf -hf -w 160 -h 120 -q 10 -o ./Images/"+timeStamp+".jpg";
             String path2repository = "/"+this.getBindingName()+"/"+timeStamp+".jpg";
             String path2image = "./Images/"+timeStamp+".jpg";
             
@@ -139,8 +139,8 @@ public class ClientThing extends VirtualThing {
             transfer.createFolder("/"+this.getBindingName());
             boolean success=transfer.uploadImage(path2repository, path2image);
             
-            cmd = "rm "+path2image;
-            callCMD(cmd);
+            //cmd = "rm "+path2image;
+            //callCMD(cmd);
             
             LOG.info("Photo was saved in repository. ./Images/"+timeStamp+".jpg");
             

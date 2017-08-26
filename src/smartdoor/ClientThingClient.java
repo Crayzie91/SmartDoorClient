@@ -68,7 +68,7 @@ public class ClientThingClient extends ConnectedThingClient {
 
 		//Set ClientThing ID and location to identify the client
 		client.writeProperty(ThingworxEntityTypes.Things, ThingName, "ID", new IntegerPrimitive(ID), 10000);	
-        client.writeProperty(ThingworxEntityTypes.Things, ThingName, "Location", new StringPrimitive(loc), 10000);	
+                client.writeProperty(ThingworxEntityTypes.Things, ThingName, "Location", new StringPrimitive(loc), 10000);	
         }
 	
 	/**
@@ -79,7 +79,7 @@ public class ClientThingClient extends ConnectedThingClient {
 	 */
 	public static void main(String[] args) {	
 		ClientConfigurator config = new ClientConfigurator();
-		String uri="http://34.227.165.169:80/Thingworx/WS";
+		String uri="http://34.252.164.220:80/Thingworx/WS";
 		String AppKey="ce22e9e4-2834-419c-9656-ef9f844c784c";
 	
 		// Set the URI of the server that we are going to connect to
