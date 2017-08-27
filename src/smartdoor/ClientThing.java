@@ -1,24 +1,15 @@
 package smartdoor;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.thingworx.communications.client.ConnectedThingClient;
 import com.thingworx.communications.client.things.VirtualThing;
 import com.thingworx.metadata.PropertyDefinition;
-import com.thingworx.metadata.annotations.ThingworxEventDefinition;
-import com.thingworx.metadata.annotations.ThingworxEventDefinitions;
-import com.thingworx.metadata.annotations.ThingworxPropertyDefinition;
-import com.thingworx.metadata.annotations.ThingworxPropertyDefinitions;
 import com.thingworx.metadata.annotations.ThingworxServiceDefinition;
 import com.thingworx.metadata.annotations.ThingworxServiceParameter;
 import com.thingworx.metadata.annotations.ThingworxServiceResult;
 import com.thingworx.types.primitives.IPrimitiveType;
-import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 

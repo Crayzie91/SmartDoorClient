@@ -1,10 +1,5 @@
 package smartdoor;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
@@ -14,12 +9,9 @@ import com.thingworx.communications.client.ClientConfigurator;
 import com.thingworx.communications.client.ConnectedThingClient;
 import com.thingworx.communications.client.ConnectionException;
 import com.thingworx.communications.client.things.VirtualThing;
-import com.thingworx.metadata.annotations.ThingworxServiceResult;
 import com.thingworx.relationships.RelationshipTypes.ThingworxEntityTypes;
-import com.thingworx.types.InfoTable;
 import com.thingworx.types.collections.ValueCollection;
 import com.thingworx.types.primitives.IntegerPrimitive;
-import com.thingworx.types.primitives.NumberPrimitive;
 import com.thingworx.types.primitives.StringPrimitive;
 
 public class ClientThingClient extends ConnectedThingClient {
