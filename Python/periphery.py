@@ -50,6 +50,9 @@ GPIO.setup(GPIO_DOOR, GPIO.IN)
 
 DoorState="Closed" # Initial state of door
 
+def trigger(status):
+    DoorStatus(status)
+
 # Triggered if the state of the door is changed remotely
 def remote_callback(GPIO_REMOTE_TRIGGER):
     print(GPIO.input(GPIO_REMOTE_TRIGGER_SELECT1))
@@ -81,8 +84,8 @@ def door_callback(GPIO_DOOR):
 GPIO.add_event_detect(GPIO_DOOR, GPIO.BOTH, door_callback)
    
 # URL of the Thingworx server
-baseurl = "http://34.227.165.169/Thingworx/"
-client = ""
+baseurl = "http://34.252.164.220/Thingworx/"
+client = "undefined"
 
 session = requests.Session()
 session.headers.update({"appKey":"ce22e9e4-2834-419c-9656-ef9f844c784c"})
@@ -118,15 +121,18 @@ def getdistance():
     return distanz
 
 # This function sets the color of the neopixel
+
 def setLedColor(LEDcolor):
     led.setPixelColor(0, LEDcolor)
     led.show()
+
 
 # This function is called by every function that changed the door state
 # The global state and the led color are changed
 def DoorStatus(newState):
     global DoorState
     DoorState=newState
+    print(newState)
     if(newState=="Open"):
         setLedColor(Color(255, 0, 0)) #Green
     elif (newState=="Closed"):
@@ -158,7 +164,8 @@ def Apicall(httprequest, object, value=0):
         
 if __name__ == '__main__':
     # Create NeoPixel object with appropriate configuration.
-    led = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL, LED_STRIP)
+    led = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL, LED_STRIP) 
+    
     # Intialize the library (must be called once before other functions).
     led.begin()
  

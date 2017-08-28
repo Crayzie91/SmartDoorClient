@@ -46,7 +46,7 @@ def Apicall(name):
     session.headers.update({"Accept":"application/json"})
     requestbody = "{\"NewEntryRequest\":\""+name+"\"}"
 
-    baseurl = "http://34.227.165.169/Thingworx/"
+    baseurl = "http://34.252.164.220/Thingworx/"
     entityurl = baseurl + "Things/"+sys.argv[1]+"/Properties/NewEntryRequest"
 
     response = session.put(entityurl, data=requestbody)
