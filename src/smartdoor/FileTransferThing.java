@@ -123,6 +123,13 @@ public class FileTransferThing {
 		return imgfile;
 	}
 	
+	/**
+	 * This function return a URL to a file in the repository
+	 * 
+	 * @param path2repository Path to folder in the repository
+	 * @param NameofFile Name of the file
+	 * @return
+	 */
 	public String getLinktoFile (String path2repository, String NameofFile) {
 		String link = null;
 		
