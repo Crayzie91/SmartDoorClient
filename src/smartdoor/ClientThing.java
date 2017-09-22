@@ -21,8 +21,11 @@ import java.util.Calendar;
 @SuppressWarnings("serial")
 public class ClientThing extends VirtualThing {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ClientThing.class);
-    private static String RepositoryName = "SmartDoorRepository";
+    private static final Logger LOG = LoggerFactory.getLogger(ClientThing.class);
+    private static final String RepositoryName = "SmartDoorRepository";
+    private static String uri = null;
+    private static String AppKey = null;
+    
 
 	/**
 	 * A custom constructor. The Constructor is needed to call initializeFromAnnotations,
@@ -32,12 +35,16 @@ public class ClientThing extends VirtualThing {
 	 * @param name The name of the thing.
 	 * @param description A description of the thing.
 	 * @param client The client that this thing is associated with.
+         * @param uri URi of the Thingworx Server
+         * @param AppKey AppKey for the THingworx Server
 	 * 
 	 * @see: https://developer.thingworx.com/resources/guides/thingworx-java-sdk-quickstart/creating-data-model
 	 */
-	public ClientThing(String name, String description, ConnectedThingClient client) {
+	public ClientThing(String name, String description, ConnectedThingClient client, String uri, String AppKey) {
 		super(name, description, client);
 		this.initializeFromAnnotations();
+                this.uri = uri;
+                this.AppKey = AppKey;
 	}
 	
 	/**	
@@ -152,7 +159,7 @@ public class ClientThing extends VirtualThing {
 	@ThingworxServiceResult(name="result", description="TRUE if excecution was successfull.", baseType="BOOLEAN")
 	public boolean remoteDoor(
                 @ThingworxServiceParameter( name="Status", description="Status of Door to set.", baseType="STRING" ) String status) throws Exception {		
-            String cmd = "python ./../../trigger.py "+this.getBindingName()+" "+status;
+            String cmd = "python ./../../trigger.py "+uri+" "+AppKey+" "+this.getBindingName()+" "+status;
             callCMD(cmd);
                 
             LOG.info("{}'s Door was set to {}.", this.getBindingName(), status);

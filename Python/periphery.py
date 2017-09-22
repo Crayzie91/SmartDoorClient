@@ -9,7 +9,7 @@ import json
 
 from neopixel import *
 
-import lcddriver
+import lcddriver 
 from _ast import Str
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO) # Setup of log
@@ -22,8 +22,8 @@ GPIO.setwarnings(False)
 # Set GPIO Mode (BOARD / BCM)
 GPIO.setmode(GPIO.BCM)
 # Set GPIO Pins
-GPIO_TRIGGER = 23
-GPIO_ECHO = 24
+GPIO_TRIGGER = 16
+GPIO_ECHO = 19
 # Set directions of GPIO-Pins (IN / OUT)
 GPIO.setup(GPIO_TRIGGER, GPIO.OUT)
 GPIO.setup(GPIO_ECHO, GPIO.IN)
@@ -39,10 +39,10 @@ LED_CHANNEL    = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 LED_STRIP      = ws.WS2811_STRIP_GRB   # Strip type and color ordering
 
 # Set GPIO and callback to remotely handle the door
-GPIO_DOOR = 25
+GPIO_DOOR = 17
 GPIO_REMOTE_TRIGGER = 18
-GPIO_REMOTE_TRIGGER_SELECT1 = 19
-GPIO_REMOTE_TRIGGER_SELECT2 = 20
+GPIO_REMOTE_TRIGGER_SELECT1 = 20
+GPIO_REMOTE_TRIGGER_SELECT2 = 21
 GPIO.setup(GPIO_REMOTE_TRIGGER, GPIO.IN)
 GPIO.setup(GPIO_REMOTE_TRIGGER_SELECT1, GPIO.IN)
 GPIO.setup(GPIO_REMOTE_TRIGGER_SELECT2, GPIO.IN)
@@ -74,6 +74,7 @@ GPIO.add_event_detect(GPIO_REMOTE_TRIGGER, GPIO.RISING, remote_callback)
 # Triggered if door is opened or closed
 # If state of door is "Open" the door will be locked again after it was opened
 def door_callback(GPIO_DOOR):
+    printf("Door")
     if(GPIO.input(GPIO_DOOR)):
         DoorStatus("Closed")
         Apicall("PUT", "DoorStatus", "Closed")
@@ -83,22 +84,17 @@ def door_callback(GPIO_DOOR):
  
 GPIO.add_event_detect(GPIO_DOOR, GPIO.BOTH, door_callback)
    
-# URL of the Thingworx server
-baseurl = "http://34.252.164.220/Thingworx/"
-client = "undefined"
-
 session = requests.Session()
-session.headers.update({"appKey":"ce22e9e4-2834-419c-9656-ef9f844c784c"})
-session.headers.update({"Content-Type":"application/json"})
-session.headers.update({"Accept":"application/json"})
 
 # This function retrievs the measured distance of the distance sensor
 def getdistance():
+    print("Distance")
+
     # Set Trigger HIGH
     GPIO.output(GPIO_TRIGGER, True)
  
     # Set Trigger LOW after 0.01ms
-    time.sleep(0.00001)
+    time.sleep(1)
     GPIO.output(GPIO_TRIGGER, False)
  
     StartZeit = time.time()
@@ -169,19 +165,35 @@ if __name__ == '__main__':
     # Intialize the library (must be called once before other functions).
     led.begin()
  
+    # Connection info of the Thingworx ser
+    global baseurl
+    baseurl = "http://"+str(sys.argv[1])+"/Thingworx/"
+    global appkey
+    appkey = str(sys.argv[2])
     global client
-    client = str(sys.argv[1])
+    client = str(sys.argv[3])
+
+    print(baseurl)
+    print(appkey)
+    print(client)
+
+    session.headers.update({"appKey":appkey})
+    session.headers.update({"Content-Type":"application/json"})
+    session.headers.update({"Accept":"application/json"})
     
     lcd.lcd_clear()
     
     if(GPIO.input(GPIO_DOOR)):
-        lcd.lcd_display_string("Door is not closed!",2)
+        lcd.lcd_display_string("Door is",1)
+        lcd.lcd_display_string("not closed!",2)
+     
     # Signal at systemstart if the door is open with blue blinking led
     while(GPIO.input(GPIO_DOOR)):
-        setLedColor(Color(0, 0, 255)) #Blue
-        time.sleep(1)
-        setLedColor(Color(0, 0, 0)) #Off
-        time.sleep(1)
+	print("Cycle")
+	setLedColor(Color(0, 0, 255)) #Blue
+	time.sleep(1)
+	setLedColor(Color(0, 0, 0)) #Off
+	time.sleep(1)
         
     DoorStatus("Closed")
 
@@ -191,15 +203,16 @@ if __name__ == '__main__':
             distance = getdistance()
             logging.info ("Measured Distance = %.1f cm" % distance)
             
-            Apicall("PUT", "Distance", distance)  
-            if(distance<15 or DoorState!="Closed"):
-                lcd.lcd_clear()
-                lcd.lcd_display_string("%.1f cm" % distance,1)
-                lcd.lcd_display_string("Door: "+DoorState,2)
-            elif(DoorState=="Closed"):
-                lcd.lcd_backlight("Off")
+	    if(distance<1000):
+            	Apicall("PUT", "Distance", distance)  
+            	if(distance<15 or DoorState!="Closed"):
+                	lcd.lcd_clear()
+                	lcd.lcd_display_string("%.1f cm" % distance,1)
+                	lcd.lcd_display_string("Door: "+DoorState,2)
+            	elif(DoorState=="Closed"):
+                	lcd.lcd_backlight("Off")
             
-            time.sleep(1)  
+            time.sleep(0.1)  
 
     # Exit after STRG+C input
     except KeyboardInterrupt:

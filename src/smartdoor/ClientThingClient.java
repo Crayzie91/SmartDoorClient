@@ -66,14 +66,18 @@ public class ClientThingClient extends ConnectedThingClient {
 	/**
 	 * Main Routine of the client thing.
 	 * 
-	 * @param args CLI arguments
+	 * @param args CLI arguments 
+         *              [0] Ip of Server 
+         *              [1] AppKey
 	 * @see https://developer.thingworx.com/resources/guides/thingworx-java-sdk-tutorial/understanding-example-client-connection
 	 */
 	public static void main(String[] args) {	
 		ClientConfigurator config = new ClientConfigurator();
-		String uri="http://34.252.164.220:80/Thingworx/WS";
-		String AppKey="ce22e9e4-2834-419c-9656-ef9f844c784c";
-	
+		//String uri="http://34.252.164.220:80/Thingworx/WS";
+                String uri="http://"+args[0]+":80/Thingworx/WS";
+                //String AppKey="ce22e9e4-2834-419c-9656-ef9f844c784c";
+		String AppKey=args[1];
+		
 		// Set the URI of the server that we are going to connect to
 		config.setUri(uri);
 		
@@ -101,13 +105,13 @@ public class ClientThingClient extends ConnectedThingClient {
 				CreateNewClientThing(client);
 								
 				// Create a new VirtualThing to connect to a thing on the Thingworx platform
-				ClientThing thing = new ClientThing(ThingName, "A basic client thing", client);
+				ClientThing thing = new ClientThing(ThingName, "A basic client thing", client, uri, AppKey);
 						
 				// Bind the VirtualThing to the client. This will tell the Platform that
 				// the RemoteThing is now connected and that it is ready to receive requests.
 				client.bindThing(thing);
 				
-				thing.callCMD("python ./../../periphery.py "+thing.getBindingName());
+				thing.callCMD("python ./../../periphery.py "+uri+" "+AppKey+" "+thing.getBindingName());
 
 				while (!client.isShutdown()) {
 					
